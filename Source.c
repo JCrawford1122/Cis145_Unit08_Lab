@@ -6,6 +6,8 @@
 #define LABS_WEIGHT .4f
 #define EXAMS_WEIGHT .4f
 #define FINAL_WEIGHT .2f
+#define GPA_FILE "StudentsByGpa.txt"
+#define NAMES_FILE "StudentsByName.txt"
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -25,9 +27,9 @@ void calcFinal(float *);
 void calcLetterGrade(float, char *);
 void enterStudents(STUDENTS[], int *);
 void sortByName(STUDENTS[], int);
-void sortByGpa(void);
+void sortByGpa(STUDENTS[], int);
 void displayStudents(STUDENTS[], int);
-void writeStudents(void);
+void writeStudents(STUDENTS[], int, char[]);
 
 int main()
 {
@@ -52,17 +54,17 @@ int main()
       break;
     case 1: enterStudents(students, &studentCount);
       break;
-    case 2: sortByGpa();
+    case 2: sortByGpa(students, studentCount);
       displayStudents(students, studentCount);
       break;
-    case 3: sortByGpa();
-      writeStudents();
+    case 3: sortByGpa(students, studentCount);
+      writeStudents(students, studentCount, GPA_FILE);
       break;
     case 4: sortByName(students, studentCount);
       displayStudents(students, studentCount);
       break;
     case 5: sortByName(students, studentCount);
-      writeStudents();
+      writeStudents(students, studentCount, NAMES_FILE);
       break;
     default: printf("Enter 0-5");
       break;
@@ -72,45 +74,8 @@ int main()
 
   system("pause");
   return(0);
-  /*  
-  char studentName[30];
-  char *ptr_studentName = studentName;
-  char letterGrade;
-  float percentGrade;
-  // Open the file
-  FILE * rpt;
-  rpt = fopen("grades.txt", "w");
-  if (rpt == NULL)
-  {
-    printf(FILE_ERROR);
-    fflush(stdin); getchar();
-    exit(0);
-  }
-  // Write file headings
-  fprintf(rpt, "%-30s %-10s %-15s", "Name", "% Grade", "Letter Grade\n");
-  // Get the student name
-  // Couldn't get the program to not blow up if the string for the name
-  // was to long. Added instructions for user to limit characters
-  printf("Enter student name (First, Last)(limit 30 characters) or (0) to exit: ");
-  fflush(stdin);
-  scanf(" %29[^\n]s", studentName);
-  while (studentName[0] != '0' && studentCount <= MAX_COUNT)
-  {
-    percentGrade = 0;
-    calcPercent(&percentGrade);
-    calcLetterGrade(percentGrade, &letterGrade);
-    fprintf(rpt, "\n%-30s%6.2f%10c", studentName, percentGrade, letterGrade);
-    studentCount++;
-    printf("\nEnter student name (First, Last) or (0) to exit: ");
-    fflush(stdin);
-    scanf(" %29[^\n]s", studentName);
-  }
-  fprintf(rpt, "\n\n%d %s", studentCount, " Total Students");
-  // Close the file
-  fclose(rpt);
-  // End Program */
- 
 }
+
 void enterStudents(STUDENTS students[], int * ptr_studentCount)
 {
   char firstName[15];
@@ -140,30 +105,31 @@ void enterStudents(STUDENTS students[], int * ptr_studentCount)
     {
       printf("\nClass is full after one more student.");
     }
-    printf("\nEnter student's first name: ");
+    else if (*ptr_studentCount == MAX_COUNT)
+      printf("The class is full. Enter (0) to return to the menu");
+    printf("\nEnter student's first name or (0) to Exit: ");
     fflush(stdin);
     scanf(" %14[^\n]s", firstName);
   }
 
 }
+
 void sortByName(STUDENTS students[], int studentCount)
 {
   STUDENTS temp;
   int i;
   int x;
 
-  //do i need to swap
+  
   for (x = 0; x<studentCount; x++)
   {
     for (i = 0; i<studentCount - 1 - x; i++)
     {
-      //if the name is larger
-      //if the last name is larger OR
-      //   the last name is the same AND
-      //   the first name is larger
-
-      //concat
-      if (strcmp(students[i].lastName, students[i + 1].lastName) > 0)
+      /* Sort students by last name or by first name if the last names
+       are the same.*/
+      if (strcmp(students[i].lastName, students[i + 1].lastName) > 0 ||
+        strcmp(students[i].lastName, students[i + 1].lastName) == 0 &&
+        strcmp(students[i].firstName, students[i + 1].firstName) > 0)
       {
         temp = students[i];
         students[i] = students[i + 1];
@@ -173,22 +139,57 @@ void sortByName(STUDENTS students[], int studentCount)
   }
 }
 
-void sortByGpa(void)
+void sortByGpa(STUDENTS students[], int studentCount)
 {
-  printf("sorting students by gpa");
+  STUDENTS temp;
+  int i;
+  int x;
+
+  for (x = 0; x < studentCount; x++)
+  {
+    for (i = 0; i < studentCount - 1 - x; i++) 
+    {
+      if (students[i].percentGrade < students[i + 1].percentGrade)
+      {
+        temp = students[i];
+        students[i] = students[i + 1];
+        students[i + 1] = temp;
+      }
+    }
+  }
 }
+
 void displayStudents(STUDENTS students[], int studentCount)
 {
   int i;
   printf("%-30s %-10s %-15s", "Name", "% Grade", "Letter Grade\n");
   for (i = 0; i < studentCount; i++)
   {
-    printf("\n%-15s%-20s%6.2f%10c", students[i].firstName, students[i].lastName, students[i].percentGrade, students[i].letterGrade);
+    printf("\n%-10s%-20s%6.2f % 10c", students[i].firstName, students[i].lastName, students[i].percentGrade, students[i].letterGrade);
   }
+  printf("\n\nTotal Students - %d", studentCount);
 }
-void writeStudents(void)
+
+void writeStudents(STUDENTS students[], int studentCount, char fileType[])
 {
-  printf("writing students");
+  // Open the file
+  FILE * rpt;
+  rpt = fopen(fileType, "w");
+  int i;
+  if (rpt == NULL)
+  {
+    printf(FILE_ERROR);
+    fflush(stdin); getchar();
+    exit(0);
+  }
+  // Write file headings
+  fprintf(rpt, "%-30s %-10s %-15s", "Name", "% Grade", "Letter Grade\n");
+  for (i = 0; i < studentCount; i++)
+  {
+    fprintf(rpt, "\n%-10s%-20s%6.2f % 10c", students[i].firstName, students[i].lastName, students[i].percentGrade, students[i].letterGrade);
+  }
+  fprintf(rpt, "\n\nTotal Students - %d", studentCount);
+  fclose(rpt);
 }
 
 void calcPercent(float *ptr_percentGrade)
